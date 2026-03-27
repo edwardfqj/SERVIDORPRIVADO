@@ -1,0 +1,254 @@
+<div class="space-y-6">
+  <header class="mb-6">
+    <h2 class="text-3xl font-bold text-slate-800">Panel de Administrador</h2>
+    <p class="text-slate-500 mt-2">Gestión de horarios y pacientes</p>
+  </header>
+
+  <!-- Loading indicator -->
+  <div *ngIf="loading()" class="flex items-center justify-center py-8">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#003865]"></div>
+    <span class="ml-3 text-slate-600">Cargando...</span>
+  </div>
+
+  <!-- Tabs -->
+  <div *ngIf="!loading()" class="space-y-6">
+    <!-- Tab Navigation -->
+    <div class="flex gap-2 border-b border-slate-200">
+      <button 
+        type="button"
+        (click)="activeTab = 'horarios'"
+        class="px-6 py-3 font-medium text-sm transition-colors relative"
+        [class.text-[#003865]]="activeTab === 'horarios'"
+        [class.text-slate-500]="activeTab !== 'horarios'"
+      >
+        <span class="flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          Habilitar Horarios
+        </span>
+        <span 
+          *ngIf="activeTab === 'horarios'"
+          class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#003865]"
+        ></span>
+      </button>
+      <button 
+        type="button"
+        (click)="activeTab = 'pacientes'"
+        class="px-6 py-3 font-medium text-sm transition-colors relative"
+        [class.text-[#003865]]="activeTab === 'pacientes'"
+        [class.text-slate-500]="activeTab !== 'pacientes'"
+      >
+        <span class="flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Gestionar Pacientes
+        </span>
+        <span 
+          *ngIf="activeTab === 'pacientes'"
+          class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#003865]"
+        ></span>
+      </button>
+    </div>
+
+    <!-- Tab Content: Habilitar Horarios -->
+    <div *ngIf="activeTab === 'horarios'" class="max-w-2xl mx-auto">
+      <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+        <h3 class="text-2xl font-bold text-slate-800 mb-2">Habilitar Horarios por Porcentaje</h3>
+        <p class="text-slate-500 mb-6">Ajusta el porcentaje de disponibilidad de los horarios del médico.</p>
+
+        <form (ngSubmit)="habilitarHorarios()" class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-slate-600 mb-1">Médico</label>
+            
+            <!-- Search Input -->
+            <div class="relative mb-2 flex gap-2">
+              <div class="relative flex-1">
+                <input 
+                  type="text"
+                  [(ngModel)]="medicoSearchHorarios"
+                  name="medicoSearchHorarios"
+                  placeholder="Buscar médico por nombre o cédula..."
+                  class="w-full p-2.5 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#003865] outline-none text-sm"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </div>
+              <button 
+                type="button"
+                (click)="buscarMedicosHorarios()"
+                class="px-4 py-2.5 bg-[#003865] text-white rounded-lg font-medium hover:bg-[#002a4d] transition-colors text-sm"
+              >
+                Buscar
+              </button>
+            </div>
+            
+            <!-- Doctor List -->
+            <div class="max-h-48 overflow-y-auto border border-slate-200 rounded-lg bg-white">
+              <button 
+                type="button"
+                *ngFor="let m of filteredMedicosHorarios; trackBy: trackById"
+                (click)="horarioMedicoId = m.medi_id; onMedicoHorariosChange()"
+                class="w-full p-3 text-left hover:bg-[#e6f0fa] transition-colors flex items-center gap-3 border-b border-slate-100 last:border-b-0"
+                [class.bg-[#e6f0fa]]="horarioMedicoId === m.medi_id"
+              >
+                <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[#003865] font-bold text-sm">
+                  {{ m.medi_nombre.charAt(0) }}
+                </div>
+                <div class="flex-1">
+                  <p class="font-medium text-slate-800 text-sm">{{ m.medi_nombre }}</p>
+                  <p class="text-xs text-slate-500">{{ m.espe_nombre }}</p>
+                </div>
+                <span *ngIf="m.porc" class="text-xs text-slate-400 mr-2">{{ m.porc }}%</span>
+                <svg *ngIf="horarioMedicoId === m.medi_id" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003865" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </button>
+              
+              <div *ngIf="filteredMedicosHorarios.length === 0 && medicoSearchHorarios && medicos().length > 0" class="p-4 text-center text-slate-500 text-sm">
+                No se encontraron médicos
+              </div>
+              <div *ngIf="medicos().length === 0" class="p-4 text-center text-slate-500 text-sm">
+                Presione "Buscar" para encontrar médicos
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-slate-600 mb-1">Porcentaje de Disponibilidad</label>
+            <div class="flex items-center gap-3">
+              <input 
+                type="range" 
+                [(ngModel)]="porcentaje"
+                name="porcentaje"
+                class="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                min="10"
+                max="100"
+                step="10"
+              />
+              <span class="text-lg font-bold text-[#003865] w-16 text-right">{{ porcentaje }}%</span>
+            </div>
+          </div>
+
+          <div class="bg-[#e6f0fa] border border-[#b3d4f0] rounded-xl p-4">
+            <p class="text-sm text-[#003865]">
+              <strong>💡 Nota:</strong> El porcentaje ajusta el tiempo disponible de los horarios ya configurados en la base de datos. 
+              Por ejemplo, si el médico trabaja de 8:00 a 12:00 y el porcentaje es 50%, 
+              solo se mostrarán horarios hasta las 10:00.
+            </p>
+          </div>
+
+          <button 
+            type="submit" 
+            class="w-full py-4 bg-[#003865] text-white rounded-xl font-bold text-lg hover:bg-[#002a4d] transition-colors"
+          >
+            Habilitar Horarios
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tab Content: Gestionar Pacientes -->
+    <div *ngIf="activeTab === 'pacientes'" class="max-w-4xl mx-auto">
+      <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+        <h3 class="text-2xl font-bold text-slate-800 mb-2">Gestionar Pacientes</h3>
+        <p class="text-slate-500 mb-6">Habilita o deshabilita el acceso de pacientes al sistema.</p>
+
+        <div class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-slate-600 mb-1">Buscar Paciente</label>
+            
+            <!-- Search Input -->
+            <div class="relative mb-2 flex gap-2">
+              <div class="relative flex-1">
+                <input 
+                  type="text"
+                  [(ngModel)]="pacienteSearch"
+                  name="pacienteSearch"
+                  placeholder="Buscar por nombre o cédula..."
+                  class="w-full p-2.5 pl-9 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#003865] outline-none text-sm"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </div>
+              <button 
+                type="button"
+                (click)="buscarPacientes()"
+                class="px-4 py-2.5 bg-[#003865] text-white rounded-lg font-medium hover:bg-[#002a4d] transition-colors text-sm"
+              >
+                Buscar
+              </button>
+            </div>
+            
+            <!-- Patient List -->
+            <div class="max-h-96 overflow-y-auto border border-slate-200 rounded-lg bg-white">
+              <div 
+                *ngFor="let p of filteredPacientes; trackBy: trackById"
+                class="p-3 border-b border-slate-100 last:border-b-0 flex items-center gap-3"
+              >
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+                     [class.bg-green-100]="p.habilitado === 1"
+                     [class.text-green-600]="p.habilitado === 1"
+                     [class.bg-red-100]="p.habilitado === 0"
+                     [class.text-red-600]="p.habilitado === 0">
+                  {{ p.nombre?.charAt(0) || '?' }}
+                </div>
+                <div class="flex-1">
+                  <p class="font-medium text-slate-800 text-sm">{{ p.nombre }}</p>
+                  <p class="text-xs text-slate-500">CI: {{ p.pers_ci }}</p>
+                </div>
+                <span 
+                  class="px-2 py-1 rounded-full text-xs font-medium"
+                  [class.bg-green-100]="p.habilitado === 1"
+                  [class.text-green-700]="p.habilitado === 1"
+                  [class.bg-red-100]="p.habilitado === 0"
+                  [class.text-red-700]="p.habilitado === 0"
+                >
+                  {{ p.habilitado === 1 ? 'Habilitado' : 'Deshabilitado' }}
+                </span>
+                <button 
+                  type="button"
+                  (click)="togglePacienteHabilitado(p)"
+                  class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  [class.bg-green-500]="p.habilitado === 0"
+                  [class.text-white]="p.habilitado === 0"
+                  [class.hover:bg-green-600]="p.habilitado === 0"
+                  [class.bg-red-500]="p.habilitado === 1"
+                  [class.hover:bg-red-600]="p.habilitado === 1"
+                >
+                  {{ p.habilitado === 1 ? 'Deshabilitar' : 'Habilitar' }}
+                </button>
+              </div>
+              
+              <div *ngIf="filteredPacientes.length === 0 && pacienteSearch && pacientes.length > 0" class="p-4 text-center text-slate-500 text-sm">
+                No se encontraron pacientes
+              </div>
+              
+              <div *ngIf="pacientes.length === 0" class="p-4 text-center text-slate-500 text-sm">
+                Presione "Buscar" para encontrar pacientes
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <p class="text-sm text-amber-700">
+              <strong>⚠️ Nota:</strong> Al deshabilitar un paciente, no podrá acceder al sistema de agendamiento en línea. 
+              Deberá acercarse presencialmente para continuar.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
