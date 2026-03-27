@@ -579,20 +579,15 @@ export class PatientDashboardComponent implements OnInit, OnChanges {
       const uniqueCode = appointment.codigo_qr || '0000000000';
 
       const loadImage = (url: string): Promise<string> =>
-        new Promise((resolve) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            const ctx = canvas.getContext('2d')!;
-            ctx.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL('image/jpeg'));
-          };
-          img.onerror = () => resolve('');
-          img.src = url;
-        });
+        fetch(url)
+          .then(r => r.blob())
+          .then(blob => new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => resolve('');
+            reader.readAsDataURL(blob);
+          }))
+          .catch(() => Promise.resolve(''));
 
       const qrPromise = appointment.qr_image
         ? Promise.resolve(appointment.qr_image)
