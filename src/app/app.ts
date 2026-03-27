@@ -184,7 +184,7 @@ export class App implements OnInit, OnDestroy {
         console.log('✅ Especialidad permitida:', response.especialidad_nombre);
       } else {
         this.especialidadPermitida.set(null);
-        console.log('ℹ️ Paciente puede agendar en cualquier especialidad');
+        console.log('ℹ️ Paciente no es subsecuente: bloqueo de agendamiento');
       }
       
     } catch (error) {

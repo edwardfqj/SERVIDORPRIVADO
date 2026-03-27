@@ -210,6 +210,7 @@ export class DataService {
 
   constructor() {
     this.initializeAgendas();
+    this.initializeCitasHistoricas();
   }
 
   // ============ INICIALIZACIÓN DE AGENDAS ============
@@ -251,6 +252,46 @@ export class DataService {
           user_id: 1
         });
       }
+    }
+  }
+
+  private initializeCitasHistoricas(): void {
+    // Sembrar historial para que algunos pacientes sean subsecuentes.
+    // Nota: estas citas están en el pasado y no afectan la lista de "citas futuras".
+    const seed = [
+      { pers_id: 2, espe_id: 29, medi_id: 5 },
+      { pers_id: 4, espe_id: 25, medi_id: 3 },
+    ];
+
+    const now = new Date();
+    for (const item of seed) {
+      const agenda = this.agendas.find(a => a.medi_id === item.medi_id);
+      const jornada = agenda ? this.jornadas.find(j => j.agen_id === agenda.agen_id) : null;
+      if (!agenda || !jornada) continue;
+
+      const pastDate = new Date(now);
+      pastDate.setDate(pastDate.getDate() - 120);
+      pastDate.setHours(9, 0, 0, 0);
+
+      const fechaStr = this.formatDateStr(pastDate);
+      const citaFecha = `${fechaStr} 09:00:00`;
+
+      this.citas.push({
+        cita_id: this.nextCitaId++,
+        hosp_id: 1,
+        agen_id: agenda.agen_id,
+        jorn_id: jornada.jorn_id,
+        medi_id: item.medi_id,
+        cons_id: 1,
+        espe_id: item.espe_id,
+        cita_fecha: citaFecha,
+        cita_tiempo: 20,
+        cita_activa: 1,
+        pers_id: item.pers_id,
+        proc_cita_id: 6,
+        esta_cita_id: 4,
+        cita_fech_crea: citaFecha
+      });
     }
   }
 
@@ -469,6 +510,15 @@ export class DataService {
     const medicoIdNum = parseInt(data.medico_id, 10);
     const pacienteIdNum = parseInt(data.paciente_id, 10);
 
+    // Restricción: el paciente debe ser subsecuente y solo puede agendar en su especialidad permitida
+    const restriccion = this.getUltimaCitaSubsecuente(data.paciente_id);
+    if (!restriccion.tieneCitaSubsecuente) {
+      return { success: false, error: 'Usted no es un paciente subsecuente, por favor acercarse de forma presencial a realizar la cita.' };
+    }
+    if (restriccion.especialidad_id !== data.especialidad_id) {
+      return { success: false, error: 'No puede agendar en esta especialidad. Solo puede agendar en su especialidad subsecuente.' };
+    }
+
     // Find matching agenda + jornada
     const fechaDate = new Date(data.fecha + 'T' + data.time + ':00');
     const dayOfWeek = fechaDate.getDay();
@@ -635,7 +685,7 @@ export class DataService {
   getUltimaCitaSubsecuente(persId: string): any {
     const persIdNum = parseInt(persId, 10);
     const citasSubsecuentes = this.citas
-      .filter(c => c.pers_id === persIdNum && c.proc_cita_id === 6)
+      .filter(c => c.pers_id === persIdNum && c.proc_cita_id === 6 && c.esta_cita_id !== 5)
       .sort((a, b) => b.cita_fecha.localeCompare(a.cita_fecha));
 
     if (citasSubsecuentes.length === 0) {
