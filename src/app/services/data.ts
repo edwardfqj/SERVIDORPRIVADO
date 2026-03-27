@@ -257,7 +257,11 @@ export class DataService {
   // ============ AUTH ============
 
   loginPaciente(ci: string, fecha_nacimiento: string): { success: boolean; data?: any; error?: string; status?: number } {
-    const persona = this.personas.find(p => p.pers_ci === ci && p.pers_fech_naci === fecha_nacimiento);
+    const ciNorm = (ci || '').trim().replace(/\D+/g, '');
+    const ciLookup = ciNorm.length === 13 ? ciNorm.substring(0, 10) : ciNorm;
+    const fechaNorm = (fecha_nacimiento || '').trim();
+
+    const persona = this.personas.find(p => p.pers_ci === ciLookup && p.pers_fech_naci === fechaNorm);
     if (!persona) {
       return { success: false, error: 'Credenciales inválidas', status: 401 };
     }
@@ -285,7 +289,9 @@ export class DataService {
 
   loginAdmin(correo: string, clave: string): { success: boolean; data?: any; error?: string; status?: number } {
     // Comparar contraseña en texto plano (simplificado para demo sin BD)
-    const usuario = this.usuarios.find(u => u.user_correo === correo && u.user_clave === clave);
+    const correoNorm = (correo || '').trim();
+    const claveNorm = (clave || '').trim();
+    const usuario = this.usuarios.find(u => u.user_correo === correoNorm && u.user_clave === claveNorm);
     if (!usuario) {
       return { success: false, error: 'Credenciales inválidas', status: 401 };
     }

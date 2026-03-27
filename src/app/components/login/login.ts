@@ -39,15 +39,15 @@ export class LoginComponent {
     this.error = '';
     
     if (this.activeTab === 'paciente') {
-      // Validar cédula ecuatoriana
-      if (!ValidacionCedulaService.esCedulaValida(this.idNumber)) {
+      // Validar documento ecuatoriano (cédula/RUC)
+      if (!ValidacionCedulaService.esDocumentoEcuatorianoValido(this.idNumber)) {
         this.error = 'El número de cédula no es válido. Ingrese una cédula ecuatoriana correcta.';
         this.loading = false;
         return;
       }
       
       const credentials: LoginCredentials = {
-        ci: this.idNumber,
+        ci: ValidacionCedulaService.normalizarDocumento(this.idNumber),
         fecha_nacimiento: this.birthDate,
         tipo: 'paciente'
       };
