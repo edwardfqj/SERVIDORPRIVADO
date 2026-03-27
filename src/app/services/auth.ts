@@ -49,6 +49,7 @@ export class AuthService {
   mapAuthUserToUser(authUser: AuthUser): User {
     return {
       id: authUser.id,
+      ci: authUser.ci,
       nombre: authUser.nombre,
       role: authUser.role === 'ADMINISTRADOR' ? UserRole.ADMIN : UserRole.PATIENT,
       terminos_aceptados: authUser.terminos_aceptados

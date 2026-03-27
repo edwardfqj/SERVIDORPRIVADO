@@ -53,6 +53,7 @@ export interface Appointment {
 
 export interface User {
   id: string;
+  ci?: string;
   nombre: string;
   role: UserRole;
   habilitado?: number; // 1 = habilitado, 0 = deshabilitado
