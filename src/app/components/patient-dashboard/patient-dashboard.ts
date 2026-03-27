@@ -598,8 +598,8 @@ export class PatientDashboardComponent implements OnInit, OnChanges {
           });
 
       Promise.all([
-        loadImage('/Encabezadopdf.jpeg'),
-        loadImage('/piedepaginapdf.jpeg'),
+        loadImage('/Encabezadopdf.png'),
+        loadImage('/piedepaginapdf.png'),
         qrPromise
       ]).then(([headerImg, footerImg, qrDataUrl]) => {
         const doc = new jsPDF();
@@ -610,14 +610,14 @@ export class PatientDashboardComponent implements OnInit, OnChanges {
         // --- Encabezado ---
         const headerH = 40;
         if (headerImg) {
-          doc.addImage(headerImg, 'JPEG', 0, 0, pageW, headerH);
+          doc.addImage(headerImg, 'PNG', 0, 0, pageW, headerH);
         }
 
         // --- Pie de página ---
         const footerH = 32;
         const footerY = pageH - footerH;
         if (footerImg) {
-          doc.addImage(footerImg, 'JPEG', 0, footerY, pageW, footerH);
+          doc.addImage(footerImg, 'PNG', 0, footerY, pageW, footerH);
         }
 
         // --- Código QR (encima del pie de página, esquina derecha) ---
