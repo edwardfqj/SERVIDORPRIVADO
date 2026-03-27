@@ -261,6 +261,8 @@ export class DataService {
     const seed = [
       { pers_id: 2, espe_id: 29, medi_id: 5 },
       { pers_id: 4, espe_id: 25, medi_id: 3 },
+      { pers_id: 1, espe_id: 22, medi_id: 1 },
+      { pers_id: 3, espe_id: 23, medi_id: 2 },
     ];
 
     const now = new Date();
@@ -288,7 +290,7 @@ export class DataService {
         cita_tiempo: 20,
         cita_activa: 1,
         pers_id: item.pers_id,
-        proc_cita_id: 6,
+        proc_cita_id: 1,
         esta_cita_id: 4,
         cita_fech_crea: citaFecha
       });
@@ -510,13 +512,12 @@ export class DataService {
     const medicoIdNum = parseInt(data.medico_id, 10);
     const pacienteIdNum = parseInt(data.paciente_id, 10);
 
-    // Restricción: el paciente debe ser subsecuente y solo puede agendar en su especialidad permitida
-    const restriccion = this.getUltimaCitaSubsecuente(data.paciente_id);
-    if (!restriccion.tieneCitaSubsecuente) {
-      return { success: false, error: 'Usted no es un paciente subsecuente, por favor acercarse de forma presencial a realizar la cita.' };
-    }
-    if (restriccion.especialidad_id !== data.especialidad_id) {
-      return { success: false, error: 'No puede agendar en esta especialidad. Solo puede agendar en su especialidad subsecuente.' };
+    // Restricción: el paciente debe tener una cita previa en esa especialidad
+    const tieneCitaPrevia = this.citas.some(
+      c => c.pers_id === pacienteIdNum && c.espe_id === data.especialidad_id && c.esta_cita_id !== 5
+    );
+    if (!tieneCitaPrevia) {
+      return { success: false, error: 'Usted no tiene una cita previa en esta especialidad. Por favor acérquese de forma presencial a realizar la primera cita.' };
     }
 
     // Find matching agenda + jornada
@@ -685,11 +686,11 @@ export class DataService {
   getUltimaCitaSubsecuente(persId: string): any {
     const persIdNum = parseInt(persId, 10);
     const citasSubsecuentes = this.citas
-      .filter(c => c.pers_id === persIdNum && c.proc_cita_id === 6 && c.esta_cita_id !== 5)
+      .filter(c => c.pers_id === persIdNum && c.esta_cita_id !== 5)
       .sort((a, b) => b.cita_fecha.localeCompare(a.cita_fecha));
 
     if (citasSubsecuentes.length === 0) {
-      return { tieneCitaSubsecuente: false, mensaje: 'Paciente no tiene citas subsecuentes previas' };
+      return { tieneCitaSubsecuente: false, mensaje: 'Paciente no tiene citas previas' };
     }
 
     const ultimaCita = citasSubsecuentes[0];

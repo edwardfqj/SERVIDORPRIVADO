@@ -575,175 +575,156 @@ export class PatientDashboardComponent implements OnInit, OnChanges {
   }
 
   generatePDF(appointment: Appointment): void {
-    console.log('📄 Botón Descargar presionado!');
-    console.log('📄 Iniciando generación de PDF para cita:', appointment);
-    console.log('  - appointment completo:', JSON.stringify(appointment, null, 2));
-    console.log('  - appointment.medico_id:', appointment.medico_id, '(tipo:', typeof appointment.medico_id, ')');
-    console.log('  - appointment.especialidad_id:', appointment.especialidad_id, '(tipo:', typeof appointment.especialidad_id, ')');
-    console.log('  - médicos disponibles:', this.medicos().length);
-    console.log('  - codigo_qr:', appointment.codigo_qr);
-    console.log('  - qr_image:', appointment.qr_image ? 'disponible' : 'no disponible');
-    
     try {
-      // Usar el código QR que viene del backend
       const uniqueCode = appointment.codigo_qr || '0000000000';
-      console.log('🔢 Código QR del backend:', uniqueCode);
-      
-      // Usar la imagen QR que viene del backend o generar una nueva si no existe
-      const generateQrPromise = appointment.qr_image 
+
+      const loadImage = (url: string): Promise<string> =>
+        new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d')!;
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/jpeg'));
+          };
+          img.onerror = () => resolve('');
+          img.src = url;
+        });
+
+      const qrPromise = appointment.qr_image
         ? Promise.resolve(appointment.qr_image)
         : QRCode.toDataURL(uniqueCode, {
-            width: 100,
+            width: 120,
             margin: 1,
-            color: {
-              dark: '#000000',
-              light: '#FFFFFF'
-            }
+            color: { dark: '#000000', light: '#FFFFFF' }
           });
-      
-      generateQrPromise.then(qrDataUrl => {
-        console.log('✅ QR Code listo');
+
+      Promise.all([
+        loadImage('/Encabezadopdf.jpeg'),
+        loadImage('/piedepaginapdf.jpeg'),
+        qrPromise
+      ]).then(([headerImg, footerImg, qrDataUrl]) => {
         const doc = new jsPDF();
-        
-        // Búsqueda detallada del médico
-        console.log('🔍 BÚSQUEDA DETALLADA DEL MÉDICO:');
-        console.log('  - appointment.medico_id:', appointment.medico_id, '(tipo:', typeof appointment.medico_id, ')');
-        
-        this.medicos().forEach((medico, index) => {
-          const doctorId = String(medico.id);
-          const appointmentDoctorId = String(appointment.medico_id);
-          const match = doctorId === appointmentDoctorId;
-          console.log(`  - Médico ${index + 1}:`);
-          console.log(`    * medico.id: ${medico.id} (tipo: ${typeof medico.id})`);
-          console.log(`    * String(medico.id): ${doctorId}`);
-          console.log(`    * String(appointment.medico_id): ${appointmentDoctorId}`);
-          console.log(`    * ¿Coinciden?: ${match}`);
-          console.log(`    * medico.nombre: ${medico.nombre}`);
-        });
-        
-        const medico = this.medicos().find(d => {
-          const doctorId = String(d.id);
-          const appointmentDoctorId = String(appointment.medico_id);
-          const match = doctorId === appointmentDoctorId;
-          console.log(`    🔍 Comparando: ${doctorId} === ${appointmentDoctorId} = ${match}`);
-          return match;
-        });
-        const especialidad = this.especialidades().find(e => e.id === appointment.especialidad_id);
-        
-        console.log('📄 RESULTADO FINAL:');
-        console.log('  - medico encontrado:', medico);
-        console.log('  - especialidad:', especialidad);
-        console.log('  - medico.nombre:', medico?.nombre || 'NO ENCONTRADO');
-        console.log('  - especialidad.nombre:', especialidad?.nombre || 'NO ENCONTRADO');
+        const pageW = doc.internal.pageSize.width;
+        const pageH = doc.internal.pageSize.height;
+        const marginX = 15;
 
-        doc.setFontSize(20);
-        doc.setTextColor(0, 86, 179); // #0056b3
-        doc.text('Hospital General Docente de Calderón', 105, 20, { align: 'center' });
-        
-        doc.setFontSize(16);
-        doc.setTextColor(0, 0, 0);
-        doc.text('Comprobante de Cita Médica', 105, 30, { align: 'center' });
+        // --- Encabezado ---
+        const headerH = 40;
+        if (headerImg) {
+          doc.addImage(headerImg, 'JPEG', 0, 0, pageW, headerH);
+        }
 
-        doc.setFontSize(12);
-        doc.text(`Fecha de emisión: ${new Date().toLocaleDateString()}`, 20, 45);
+        // --- Pie de página ---
+        const footerH = 32;
+        const footerY = pageH - footerH;
+        if (footerImg) {
+          doc.addImage(footerImg, 'JPEG', 0, footerY, pageW, footerH);
+        }
 
-        doc.setLineWidth(0.5);
-        doc.line(20, 50, 190, 50);
-
-        let y = 60;
-        const lineHeight = 10;
-
-        doc.setFont('helvetica', 'bold');
-        doc.text('Información del Paciente:', 20, y);
-        doc.setFont('helvetica', 'normal');
-        doc.text(this.currentUser?.nombre || 'N/A', 80, y);
-        y += lineHeight;
-
-        doc.setFont('helvetica', 'bold');
-        doc.text('Especialidad:', 20, y);
-        doc.setFont('helvetica', 'normal');
-        doc.text(especialidad?.nombre || 'N/A', 80, y);
-        y += lineHeight;
-
-        doc.setFont('helvetica', 'bold');
-        doc.text('Médico:', 20, y);
-        doc.setFont('helvetica', 'normal');
-        doc.text(medico?.nombre || 'N/A', 80, y);
-        y += lineHeight;
-
-        doc.setFont('helvetica', 'bold');
-        doc.text('Instrucciones:', 20, y);
-        y += lineHeight;
-        doc.setFont('helvetica', 'normal');
-        doc.text('Ingresar 30 min antes a enfermería para tomarse los signos vitales,', 25, y);
-        y += lineHeight;
-        doc.text('después se le asignara el consultorio', 25, y);
-        y += lineHeight * 2;
-
-        // Agregar QR Code en esquina inferior derecha
+        // --- Código QR (encima del pie de página, esquina derecha) ---
         const qrSize = 30;
-        const pageWidth = doc.internal.pageSize.width;
-        const pageHeight = doc.internal.pageSize.height;
-        const qrX = pageWidth - qrSize - 10; // 10px del margen derecho
-        const qrY = pageHeight - qrSize - 10; // 10px del margen inferior
-        
+        const qrX = pageW - marginX - qrSize;
+        const qrY = footerY - qrSize - 6;
         doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
 
+        // --- Contenido ---
+        const medico = this.medicos().find(d => String(d.id) === String(appointment.medico_id));
+        const especialidad = this.especialidades().find(e => e.id === appointment.especialidad_id);
+
+        let y = headerH + 10;
+        const lineH = 8;
+        const labelX = marginX;
+        const valueX = marginX + 58;
+
+        // Título
+        doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
-        doc.text('Fecha de Agendamiento:', 20, y);
-        doc.setFont('helvetica', 'normal');
-        // Parse bookingDate - handle MySQL datetime format (YYYY-MM-DD HH:mm:ss)
+        doc.setTextColor(0, 56, 101);
+        doc.text('COMPROBANTE DE CITA MÉDICA', pageW / 2, y, { align: 'center' });
+        y += lineH + 1;
+
+        doc.setLineWidth(0.4);
+        doc.setDrawColor(0, 56, 101);
+        doc.line(marginX, y, pageW - marginX, y);
+        y += 7;
+
+        // Datos de la cita
+        const citaDate = new Date(appointment.date + 'T00:00:00');
+        const citaDateStr = citaDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+
         let bookingDateStr = 'N/A';
         if (appointment.bookingDate) {
           try {
-            const bookingDate = appointment.bookingDate;
-            // MySQL datetime format: replace space with T for ISO format
-            const isoDate = bookingDate.includes(' ') 
-              ? bookingDate.replace(' ', 'T') 
-              : (bookingDate.includes('T') ? bookingDate : bookingDate + 'T00:00:00');
-            const date = new Date(isoDate);
-            bookingDateStr = isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('es-ES');
-          } catch {
-            bookingDateStr = 'N/A';
-          }
+            const iso = appointment.bookingDate.includes(' ')
+              ? appointment.bookingDate.replace(' ', 'T')
+              : appointment.bookingDate.includes('T') ? appointment.bookingDate : appointment.bookingDate + 'T00:00:00';
+            const d = new Date(iso);
+            bookingDateStr = isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+          } catch { bookingDateStr = 'N/A'; }
         }
-        doc.text(bookingDateStr, 80, y);
-        y += lineHeight;
 
+        const rows: [string, string][] = [
+          ['Paciente:', this.currentUser?.nombre || 'N/A'],
+          ['Cédula:', this.currentUser?.ci || 'N/A'],
+          ['Especialidad:', especialidad?.nombre || 'N/A'],
+          ['Médico:', medico?.nombre || 'N/A'],
+          ['Fecha de la Cita:', citaDateStr],
+          ['Hora de la Cita:', appointment.time],
+          ['Fecha de Emisión:', new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })],
+        ];
+
+        doc.setFontSize(10);
+        for (const [label, value] of rows) {
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(40, 40, 40);
+          doc.text(label, labelX, y);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(0, 0, 0);
+          doc.text(value, valueX, y);
+          y += lineH;
+        }
+
+        y += 4;
+        doc.setLineWidth(0.3);
+        doc.setDrawColor(210, 210, 210);
+        doc.line(marginX, y, pageW - marginX, y);
+        y += 7;
+
+        // Instrucciones
         doc.setFont('helvetica', 'bold');
-        doc.text('Fecha de Cita:', 20, y);
+        doc.setFontSize(10);
+        doc.setTextColor(0, 56, 101);
+        doc.text('Instrucciones:', labelX, y);
+        y += lineH;
         doc.setFont('helvetica', 'normal');
-        // Parse date as local time to avoid UTC conversion (add T00:00:00)
-        const citaDate = new Date(appointment.date + 'T00:00:00');
-        doc.text(citaDate.toLocaleDateString('es-ES'), 80, y);
-        y += lineHeight;
+        doc.setTextColor(50, 50, 50);
+        doc.text('\u2022 Ingresar 30 minutos antes a enfermería para tomarse los signos vitales.', labelX + 3, y);
+        y += lineH - 1;
+        doc.text('\u2022 Después se le asignará el consultorio correspondiente.', labelX + 3, y);
+        y += lineH + 4;
 
+        // Recordatorio
         doc.setFont('helvetica', 'bold');
-        doc.text('Hora de Cita:', 20, y);
+        doc.setTextColor(0, 56, 101);
+        doc.text('Recordatorio Importante:', labelX, y);
+        y += lineH;
         doc.setFont('helvetica', 'normal');
-        doc.text(appointment.time, 80, y);
-        y += lineHeight * 1.5;
+        doc.setTextColor(50, 50, 50);
+        doc.text('\u2022 Realizarse los exámenes previos antes de la cita.', labelX + 3, y);
+        y += lineH - 1;
+        doc.text('\u2022 Traiga los resultados impresos el día de su cita.', labelX + 3, y);
 
-        doc.setFont('helvetica', 'bold');
-        doc.text('Recordatorio Importante:', 20, y);
-        y += lineHeight;
-        doc.setFont('helvetica', 'normal');
-        doc.text('Recordar realizarse los exámenes previos antes de la cita', 25, y);
-        y += lineHeight;
-        doc.text('Por favor, traiga los resultados impresos el día de su cita.', 25, y);
-        y += lineHeight;
-
-        console.log('💾 Guardando PDF...');
         const fileName = `cita_${appointment.date}_${appointment.time.replace(':', '')}.pdf`;
         doc.save(fileName);
-        console.log('✅ PDF guardado exitosamente:', fileName);
-      }).catch(error => {
-        console.error('❌ Error generando QR code:', error);
-        console.error('❌ Detalles del error:', (error as Error).message);
+      }).catch(err => {
+        console.error('❌ Error generando PDF:', err);
       });
     } catch (error) {
       console.error('❌ Error general en generatePDF:', error);
-      console.error('❌ Detalles del error:', (error as Error).message);
     }
   }
 
