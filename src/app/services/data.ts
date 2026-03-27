@@ -146,9 +146,9 @@ export class DataService {
 
   personas: PersonaRow[] = [
     { pers_id: 1, pers_ci: '1710034065', pers_nombres: 'JUAN CARLOS', pers_apellidos: 'PEREZ LOPEZ', pers_fech_naci: '1990-05-20', habilitado: 1, terminos_aceptados: 0 },
-    { pers_id: 2, pers_ci: '1720408755', pers_nombres: 'MARIA FERNANDA', pers_apellidos: 'GARCIA MARTINEZ', pers_fech_naci: '1985-08-15', habilitado: 1, terminos_aceptados: 1 },
+    { pers_id: 2, pers_ci: '1720408755', pers_nombres: 'MARIA FERNANDA', pers_apellidos: 'GARCIA MARTINEZ', pers_fech_naci: '1985-08-15', habilitado: 1, terminos_aceptados: 0 },
     { pers_id: 3, pers_ci: '1750871691', pers_nombres: 'PEDRO ANDRES', pers_apellidos: 'RODRIGUEZ SILVA', pers_fech_naci: '1978-12-01', habilitado: 1, terminos_aceptados: 0 },
-    { pers_id: 4, pers_ci: '1714307665', pers_nombres: 'ANA LUCIA', pers_apellidos: 'MORALES VEGA', pers_fech_naci: '1995-03-10', habilitado: 1, terminos_aceptados: 1 },
+    { pers_id: 4, pers_ci: '1714307665', pers_nombres: 'ANA LUCIA', pers_apellidos: 'MORALES VEGA', pers_fech_naci: '1995-03-10', habilitado: 1, terminos_aceptados: 0 },
     { pers_id: 5, pers_ci: '1723456781', pers_nombres: 'CARLOS EDUARDO', pers_apellidos: 'TORRES MENDEZ', pers_fech_naci: '1988-07-25', habilitado: 0, terminos_aceptados: 0 },
   ];
 
